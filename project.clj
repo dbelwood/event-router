@@ -5,6 +5,6 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.6.0"]
                  [clj-kafka "0.3.1"]]
-  :main ^:skip-aot event-stream.core
+  :main ^:skip-aot event-router.core
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all}})
