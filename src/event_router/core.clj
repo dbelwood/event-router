@@ -1,51 +1,25 @@
 (ns event-router.core
-  (:use [clj-kafka.producer])
-  (:use [clj-kafka.zk])
-  (:use [clj-kafka.core])
-  (:use [clj-kafka.admin])
-  (:require [clojure.string :as str])
   (:require [event-router.consumer :as consumer])
+  (:require [event-router.producer :as producer])
+  (:require [event-router.utils :as utils])
+  (:require [clojure.data.json :as json])
   (:gen-class))
 
 ;; Configuration
-(def zookeeper-connect {"zookeeper.connect" "127.0.0.1:2181"})
-(def broker-addresses (str/join ", " (
-                       map
-                       (partial str/join ":")
-                       (map
-                        #(map %1 [:host :port])
-                        (into () (brokers zookeeper-connect))))))
-(def producer-config {"metadata.broker.list" broker-addresses
-                      "serializer.class" "kafka.serializer.DefaultEncoder"
-                      "partitioner.class" "kafka.producer.DefaultPartitioner"})
+(def zookeeper-address "127.0.0.1:2181")
 
-(def consumer-config (conj zookeeper-connect {"group.id" "event-router"
-                                              "auto.offset.reset" "smallest"
-                                              "auto.commit.enable" "false"}))
-(def p (producer producer-config))
-
-
-(defn- publish-message
-  [topic msg]
-  "Publish a message on a topic"
-  (let [message-bytes (.getBytes msg)]
-  (send-message p (message topic message-bytes))))
-
-(def topic-does-not-exist? (complement topic-exists?))
-
-(defn- create-topics
-  [topics]
-  "Given a list of topics, create the ones that don't exist and return the created topics"
-  (let [zk (zk-client (get zookeeper-connect "zookeeper.connect"))
-        exists? (partial topic-does-not-exist? zk)
-        topics-to-create (filter exists? topics)
-        create (partial create-topic zk)]
-    (if (every? true? (map create topics-to-create)) :ok :error)))
+(def c (consumer/consumer zookeeper-address "event-router"))
+(def p (producer/producer (utils/broker-addresses zookeeper-address)))
 
 (defn -main
   [& args]
   "Publish and consume a message"
-  (let [topics ["source"]]
-        (create-topics topics)
-        (publish-message "source" "test")))
-        ;;(consumer/consume-message "source")))
+  (let [topics ["source"]
+        iter (take 100 (cycle ["a" "b"]))
+        messages (map #(json/write-str {:key %1 :value "test"}) iter)]
+        (utils/create-topics zookeeper-address topics)
+        (doseq [msg messages]
+          (producer/publish-message p (first topics) msg))
+        (println (map
+                  #(String. (.value %1))
+                  (take 100 (consumer/get-topic-stream c (first topics)))))))
