@@ -1,12 +1,12 @@
-# event-router
-Route/transform/multicast events from service service using Clojure and Kafka
-=======
-# Event Stream
+# Event Router
+## Route/transform/multicast events from service service using Clojure and Kafka
 
 ## Events
 Events are immutable data emitted by services and event routers.  Much like data structures in Clojure, you can produce new and changed copies of the original event, but the event must be guaranteed to not change over time.
 
 ### Types
+
+- Is type a difference without distinction?
 
 * Light Weight Events - published by services as they process a specific transaction, i.e. Shipping Events or Fulfillment Events
 * Completion Events - published by services when their transaction is complete and they wish to deliver their finished work
@@ -17,7 +17,7 @@ Events are immutable data emitted by services and event routers.  Much like data
 
 ### Publishing operations
 
-* `publishEvent`
+* `(publish-events events)`
 
 ## Processing Events
 
@@ -26,12 +26,12 @@ Events are immutable data emitted by services and event routers.  Much like data
 * Can filter/transform incoming data and create 1-n new copies of the event and publish to 1-m topics
 * Should log their processing metrics to a monitoring topic(s)
 
-#### Event Router operations
+#### Router operations
 
-* `transformEvent` - turn incoming event data structure into 0-n new data structures
-* `publishEvents` - publish 1-n new/existing events
-* `handleBadEvent` - put event on bad event topic for this router and do any cleaning necessary
-* `handleProcessingError` - reset offset to re-process incoming message
+* Validation Function - validates incoming events for correctness
+* Transformation Function - turn incoming event data structure into 0-n new data structures
+* HandleInvalidEventFunction - put event on bad event topic for this router and do any cleaning necessary
+*  - reset offset to re-process incoming message
 
 ### Event Consumers
 
